@@ -106,7 +106,7 @@ class TaigaError(Exception):
     """"""
 
 
-taiga = Taiga('https://boards.calculate.ru', 'admin', 'uRW4oVw0QS4kQ')
+taiga = Taiga('https://boards.calculate.ru', 'admin_user', 'password')
 
 
 async def fun():
