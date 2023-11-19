@@ -1,0 +1,71 @@
+pipeline {
+    agent none
+
+    stages {
+        stage('Build Test Branch') {
+            when {
+                branch 'test'
+            }
+            agent { label 'docker-1' }
+            steps {
+                script {
+                    sh 'docker build -t myproj .' // Сборка проекта через Docker для ветки 'test'
+                }
+            }
+        }
+        stage('Check Test Project Availability') {
+            when {
+                branch 'test'
+            }
+            agent { label 'docker-1' }
+            steps {
+                script {
+                    sh 'go run your_go_script.go' // Проверка доступности проекта для ветки 'test'
+                }
+            }
+        }
+        stage('Deploy Stage Branch') {
+            when {
+                branch 'stage'
+            }
+            agent { label 'kubernetes-1' }
+            steps {
+                script {
+                    sh './run.sh stage' // Деплой для ветки 'stage' на агенте kubernetes-1
+                }
+            }
+        }
+        stage('Deploy Production Branch') {
+            when {
+                branch 'master'
+            }
+            agent { label 'kubernetes-2' }
+            steps {
+                script {
+                    sh './run.sh prod' // Деплой для ветки 'master' на агенте kubernetes-2
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            // Пуш образа только после успешного завершения этапов сборки и проверки для ветки 'test'
+            when {
+                branch 'test'
+            }
+            steps {
+                script {
+                    sh "docker push rm.obit.ru:85/myproj" // Пуш в регистр образов для ветки 'test'
+                }
+            }
+        }
+        failure {
+            // Обработка ошибок, если что-то пошло не так
+            script {
+                echo "Pipeline failed!"
+                currentBuild.result = 'FAILURE'
+            }
+        }
+    }
+}
